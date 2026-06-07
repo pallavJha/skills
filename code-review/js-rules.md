@@ -23,6 +23,57 @@ function process(data: User): string {
 ### No implicit any
 Do not suppress type errors with `@ts-ignore` or `as any`.
 
+### Abbreviations in names are fully uppercased
+Acronyms and abbreviations in class, interface, variable, and function names must be fully uppercased. Do not title-case them.
+
+```ts
+// Bad
+export interface SmtpMeta {
+export interface SpfResult {
+export interface DkimSignature {
+export function startSse(): EventSource {
+
+// Good
+export interface SMTPMeta {
+export interface SPFResult {
+export interface DKIMSignature {
+export function startSSE(): EventSource {
+```
+
+### Use path aliases instead of deep relative imports
+Long relative paths are hard to read. Create path aliases and use those.
+
+```js
+// Bad
+import { getEmailForSession } from '../../../lib/email/repository.js';
+import { listMessageIds, getMessage } from '../../../lib/email/messages.js';
+
+<script src="../../scripts/email/init.ts"></script>
+
+// Good
+import { getEmailForSession } from '@lib/email/repository.js';
+import { listMessageIds, getMessage } from '@lib/email/messages.js';
+
+<script src="@scripts/email/init.ts"></script>
+```
+
+### All custom errors must extend a BaseError class
+The `BaseError` class should extend `Error` and implement `toJSON` so that `Error.prototype` properties are not lost during serialization.
+
+### Check content type before parsing response body
+`await res.json()` is dangerous without confirming the content type header first. The server may return HTML, plain text, or an empty body — all of which will throw an unhelpful parse error.
+
+### Error messages should describe what the caller was trying to do
+The message should make sense to someone reading a log without the source code open.
+
+```ts
+// Bad
+throw new Error('allocate response missing email');
+
+// Good
+throw new Error('cannot find email in the email allocate API response');
+```
+
 ## Code Style
 
 ### Always use braces for control structures
