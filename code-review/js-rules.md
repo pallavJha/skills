@@ -74,6 +74,17 @@ throw new Error('allocate response missing email');
 throw new Error('cannot find email in the email allocate API response');
 ```
 
+### Log the error object, not just the message
+Logging `err.message` discards the stack trace and the `cause` chain. Always log the full error object.
+
+```ts
+// Bad
+c.on('error', (err) => console.error('[email] redis client error:', err.message));
+
+// Good
+c.on('error', (err) => console.error('[email] redis client error:', err));
+```
+
 ## Code Style
 
 ### Always use braces for control structures
