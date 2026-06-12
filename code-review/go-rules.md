@@ -1,6 +1,8 @@
-### Don't write complex one-line conditionals
+### GO1 — Don't write complex one-line conditionals
 
 Go doesn't have ternaries, but the same readability problem shows up when conditions get crammed into a single expression or a dense one-liner. Prefer plain `if`/`else`.
+
+Grep: `^\s*if .*\{.*\}\s*$`
 
 **Bad:**
 ```go
@@ -21,12 +23,12 @@ if ok && v >= -maxUTCOffsetMinutes && v <= maxUTCOffsetMinutes {
 }
 ```
 
-### Don't decide by yourself
+### GO2 — Don't decide by yourself
 
 - You can just make a decision on your own. For example, if there's a Go module in a monorepo which is not part of the root `go.work` file and
   you've been tasked with wiring it up, don't assume you should add it to the `use (...)` block in `go.work`. Ask with nice options.
 
-### Use proper types
+### GO3 — Use proper types
 
 Always use explicit, concrete types. Avoid `interface{}` / `any` unless genuinely required. If `any` is needed, narrow it with a type assertion or type switch before use.
 
@@ -47,9 +49,11 @@ func process(u User) string {
 }
 ```
 
-### Handle errors explicitly
+### GO4 — Handle errors explicitly
 
 Never discard an error with `_` unless you have a concrete reason, and never let an error fall through silently. Check it where it happens and either handle it or wrap it with context using `fmt.Errorf("...: %w", err)`.
+
+Grep: `(^|, |\s)_ :?=`
 
 ```go
 // Bad
@@ -69,9 +73,11 @@ if err != nil {
 }
 ```
 
-### Compare errors with `errors.Is` / `errors.As`
+### GO5 — Compare errors with `errors.Is` / `errors.As`
 
 Never use `==` to compare errors or type-assert directly — wrapped errors (`%w`) won't match. Use `errors.Is` for sentinel values and `errors.As` for typed errors.
+
+Grep: `err (==|!=) [^n]` , `err\.\(`
 
 ```go
 // Bad
@@ -88,9 +94,11 @@ if errors.As(err, &pathErr) {
 }
 ```
 
-### `context.Context` is the first argument
+### GO6 — `context.Context` is the first argument
 
 Always pass `ctx context.Context` as the first parameter of any function that does I/O, blocks, or calls other context-aware code. Never store a `Context` in a struct field — pass it through the call chain.
+
+Grep: `, ctx context\.Context`
 
 ```go
 // Bad
@@ -101,7 +109,7 @@ type Worker struct { ctx context.Context } // don't do this
 func (s *Server) Fetch(ctx context.Context, id string) (*User, error)
 ```
 
-### Every goroutine needs a known exit
+### GO7 — Every goroutine needs a known exit
 
 Don't `go f()` without knowing how it stops. A goroutine that blocks forever on a channel or a network call is a silent leak — no panic, no log. Tie its lifetime to a `context.Context`, a `done` channel, or a `sync.WaitGroup` the caller controls.
 
@@ -120,7 +128,7 @@ go func() {
 }()
 ```
 
-### Don't put non-trivial work in `init()`
+### GO8 — Don't put non-trivial work in `init()`
 
 `init()` runs implicitly at import time, in an order you don't fully control, and can't be disabled or mocked in tests. Keep it to trivial registration (e.g. `sql.Register`). Anything that can fail, do I/O, or read config belongs in an explicit `New...()` constructor the caller invokes.
 
@@ -140,10 +148,13 @@ func NewStore(ctx context.Context, dsn string) (*Store, error) {
 }
 ```
 
-### Do not become the Co Committer
+### GO9 — Do not become the Co Committer
 You will never be responsible for the changes you make, so never become a Co Committer.
 
-### Don't use `!= ""` check for determining if the string is empty
+### GO10 — Don't use `!= ""` check for determining if the string is empty
+
+Grep: `(==|!=) ""`
+
 ```go
 // Bad
 if flags.LogLevel == "" {
@@ -156,7 +167,7 @@ if len(flags.LogLevel) == 0 {
 }
 ```
 
-### Error message should contain the intent for which the failing function was called
+### GO11 — Error message should contain the intent for which the failing function was called
 ```go
 // Bad
 defer func() {
@@ -173,7 +184,10 @@ defer func() {
 }()
 ```
 
-### Use `fmt.Sprintf` instead of string concatenation
+### GO12 — Use `fmt.Sprintf` instead of string concatenation
+
+Grep: `" ?\+ ?[[:alnum:]_]` , `[[:alnum:]_)] ?\+ ?"`
+
 ```go
 // Bad
 return l.allow(ctx, "rate:ip:"+ip, l.cfg.PerIPRateLimit)
@@ -182,7 +196,10 @@ return l.allow(ctx, "rate:ip:"+ip, l.cfg.PerIPRateLimit)
 return l.allow(ctx, fmt.Sprintf("rate:ip:%s", ip), l.cfg.PerIPRateLimit)
 ```
 
-### Do not write oneliner return statement
+### GO13 — Do not write oneliner return statement
+
+Grep: `\{ return .* \}`
+
 ```go
 // Bad
 func (c *Context) Done() <-chan struct{} { return c.ctx.Done() }
@@ -201,7 +218,7 @@ func (c *Context) Value(key any) any {
 }
 ```
 
-### Keep doc comments short
+### GO14 — Keep doc comments short
 
 Doc comments on exported identifiers default to one line. Multi-line only when the WHY is non-obvious (hidden constraint, workaround, surprising behavior). Never describe what the code does — the code already does that.
 
@@ -218,9 +235,11 @@ const SMTPCodeMailboxUnavailable = 550
 const SMTPCodeMailboxUnavailable = 550
 ```
 
-### Handle Close errors in tests
+### GO15 — Handle Close errors in tests
 
 A deferred Close in a test must report the error via t.Errorf. Silent drops hide leaks and flaky teardown.
+
+Grep: `_ = .*\.Close\(\)`
 
 ```go
 // Bad
@@ -234,9 +253,11 @@ defer func() {
 }()
 ```
 
-### Constant names start with a capital letter
+### GO16 — Constant names start with a capital letter
 
 Constants — `const` declarations and `var` declarations that hold values intended to be immutable for the program's lifetime (sentinel errors, precompiled scripts, lookup tables, named codes) — start with a capital letter even when only used within the same package. This keeps named-constant declarations visually distinct from runtime variables and makes intent obvious to readers.
+
+Grep: `const [a-z]`
 
 ```go
 // Bad
@@ -248,7 +269,7 @@ const SMTPCodeMailboxUnavailable = 550
 var ErrRecipientDomainNotAccepted = &gosmtp.SMTPError{...}
 ```
 
-### Don't create variables with poor names
+### GO17 — Don't create variables with poor names
 
 A variable's name is its only documentation at the call site. A reader scanning the function should know what each name refers to without scrolling back. Three failure modes to avoid:
 
@@ -287,3 +308,48 @@ defer shutdownCancel()
 ```
 
 Exceptions stay narrow: `ctx`, `cfg`, `rdb`, `err`, `mu`, `wg`, `ch`, struct receivers — these are universal enough that readers parse them as the full word automatically. Everything else gets spelled out.
+
+### GO18 — Package names are the natural short word
+Don't suffix package names to avoid collisions with the standard library; alias at the import site instead.
+
+```go
+// Bad
+package httpsrv
+
+// Good
+package http
+```
+
+### GO19 — Group constants per type with a type prefix
+When several domains share a result/status concept, give each its own prefixed constants instead of one shared generic set.
+
+```go
+// Bad
+const ResultPass = "pass" // shared by SPF, DKIM, DMARC
+
+// Good
+const SPFResultPass = "pass"
+const DKIMResultPass = "pass"
+```
+
+### GO20 — Functions receive the config object, not the config path
+Passing a path forces every test through the same file. Passing the object lets test setup read the config once and mutate it per testcase (e.g. toggling TLS).
+
+```go
+// Bad
+func Run(configPath string) error
+
+// Good
+func Run(ctx context.Context, cfg *Config) error
+```
+
+### GO21 — `t.Helper()` belongs only in true helpers
+A testcase function calling `t.Helper()` is wrong — it would hide the testcase itself from failure traces. Only shared assertion/setup helpers call it.
+
+Grep: `t\.Helper\(\)`
+
+### GO22 — Hide test-only constructs behind build tags
+Constructors, resolver overrides, and hooks that exist only for tests must be unreachable from production code — guard them with `//go:build test` (or equivalent) rather than relying on convention.
+
+### GO23 — Prefer templates over near-duplicate string builders
+Two functions that differ only in content type (or one format detail) are one function with a parameter — or a `text/template`. Let the specific one delegate to the general one.
