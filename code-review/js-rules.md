@@ -66,7 +66,29 @@ import { listMessageIds, getMessage } from '@lib/email/messages.js';
 ### JS5 — All custom errors must extend a BaseError class
 The `BaseError` class should extend `Error` and implement `toJSON` so that `Error.prototype` properties are not lost during serialization.
 
-Grep: `extends Error\b`
+Any error that extends `BaseError` and adds its own fields must override `toJSON` to include those fields, calling `super.toJSON()` so the base properties are preserved. Otherwise the subclass's fields are silently dropped during serialization.
+
+```ts
+// Bad — `orderId` is lost when serialized
+class OrderError extends BaseError {
+  constructor(message, public orderId) {
+    super(message);
+  }
+}
+
+// Good
+class OrderError extends BaseError {
+  constructor(message, public orderId) {
+    super(message);
+  }
+
+  toJSON() {
+    return { ...super.toJSON(), orderId: this.orderId };
+  }
+}
+```
+
+Grep: `extends Error\b`, `extends BaseError\b`
 
 ### JS6 — Check content type before parsing response body
 `await res.json()` is dangerous without confirming the content type header first. The server may return HTML, plain text, or an empty body — all of which will throw an unhelpful parse error.
