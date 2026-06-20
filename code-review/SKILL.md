@@ -15,19 +15,20 @@ Do NOT review by reading the diff once and writing down what stands out — that
 
 2. **Build the rule inventory**: Collect every rule that applies to this review. Rule IDs are written in the source files — never invent or renumber them:
    - `D1..Dn`: rules from the project root's `DEVELOPMENT.md`, if it exists. This file has no embedded IDs, so number its rules at review time in the order they appear.
-   - `JS#` / `GO#`: rules from the language rules files in `${CLAUDE_SKILL_DIR}/` matching the changed files' languages. Each rule's ID is in its heading (e.g. `### JS10 — No complex ternaries`).
+   - `JS#` / `GO#` / `HTML#`: rules from the language rules files in `${CLAUDE_SKILL_DIR}/` matching the changed files' languages. Each rule's ID is in its heading (e.g. `### JS10 — No complex ternaries`).
      - Go: `${CLAUDE_SKILL_DIR}/go-rules.md`
      - JavaScript / TypeScript / Svelte: `${CLAUDE_SKILL_DIR}/js-rules.md`
+     - HTML / Svelte / JSX markup: `${CLAUDE_SKILL_DIR}/html-rules.md`
    - `C#`/`S#`/`B#`/`P#`/`R#`/`M#`: the dimension checks below; each bullet carries its ID.
 
    The inventory is the contract for the review — every ID must receive a verdict before the review can end.
 
 3. **Grep pre-pass**: Mechanically detectable rules carry a `Grep:` line in the rules files, listing one or more regex patterns in backticks. Run every pattern against the changed files only (Grep tool or `grep -nE`). Each hit is a candidate violation: during the sweep it must be either confirmed as a finding or dismissed with a one-line reason (e.g. "JS10 hit at api.ts:42 — `?.` optional chaining, not a ternary"). Never silently drop a hit.
 
-   The `Grep:` patterns are the ONLY things you search for. The code examples inside rules exist to explain the rule — never grep for identifiers, strings, or values taken from an example (e.g. do not search for `SmtpMeta`, `cf-ipcountry`, or `consumeDirty`). Finding zero example keywords proves nothing about the rule.
+   The `Grep:` patterns are the ONLY things you search for. The code examples inside rules exist to explain the rule — never grep for identifiers, strings, or values taken from an example (e.g. do not search for `HttpHeaders`, `x-some-header`, or `consumeDirty`). Finding zero example keywords proves nothing about the rule.
 
 4. **Parallel sweep**: Split the inventory into four slices and review them concurrently — spawn all four agents in a single message so they actually run in parallel:
-   - Agent 1: `D#` + the language rules (`JS#` / `GO#`)
+   - Agent 1: `D#` + the language rules (`JS#` / `GO#` / `HTML#`)
    - Agent 2: `C#` + `B#` (correctness and reliability — the deepest read)
    - Agent 3: `S#` + `P#` (security and performance)
    - Agent 4: `R#` + `M#` (readability and maintainability)

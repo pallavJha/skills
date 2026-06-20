@@ -6,20 +6,20 @@ Grep: `^\s*if .*\{.*\}\s*$`
 
 **Bad:**
 ```go
-const maxUTCOffsetMinutes = 14 * 60
+const maxPageSize = 100
 
-utcOffset := 0
-if v, ok := req.Body["utcOffset"].(int); ok && v >= -maxUTCOffsetMinutes && v <= maxUTCOffsetMinutes { utcOffset = v }
+pageSize := defaultPageSize
+if v, ok := req.Body["pageSize"].(int); ok && v > 0 && v <= maxPageSize { pageSize = v }
 ```
 
 **Good:**
 ```go
-const maxUTCOffsetMinutes = 14 * 60
+const maxPageSize = 100
 
-utcOffset := 0
-v, ok := req.Body["utcOffset"].(int)
-if ok && v >= -maxUTCOffsetMinutes && v <= maxUTCOffsetMinutes {
-    utcOffset = v
+pageSize := defaultPageSize
+v, ok := req.Body["pageSize"].(int)
+if ok && v > 0 && v <= maxPageSize {
+    pageSize = v
 }
 ```
 
@@ -171,15 +171,15 @@ if len(flags.LogLevel) == 0 {
 ```go
 // Bad
 defer func() {
-  if err := rdb.Close(); err != nil {
-    ctx.L().Warn().Err(err).Msg("redis close")
+  if err := f.Close(); err != nil {
+    ctx.L().Warn().Err(err).Msg("file close")
   }
 }()
 
 // Good
 defer func() {
-  if err := rdb.Close(); err != nil {
-    ctx.L().Warn().Err(err).Msg("error while closing the redis client")
+  if err := f.Close(); err != nil {
+    ctx.L().Warn().Err(err).Msg("error while closing the export file")
   }
 }()
 ```
@@ -190,10 +190,10 @@ Grep: `" ?\+ ?[[:alnum:]_]` , `[[:alnum:]_)] ?\+ ?"`
 
 ```go
 // Bad
-return l.allow(ctx, "rate:ip:"+ip, l.cfg.PerIPRateLimit)
+return store.get(ctx, "user:"+userID, cfg.CacheTTL)
 
 // Good
-return l.allow(ctx, fmt.Sprintf("rate:ip:%s", ip), l.cfg.PerIPRateLimit)
+return store.get(ctx, fmt.Sprintf("user:%s", userID), cfg.CacheTTL)
 ```
 
 ### GO13 — Do not write oneliner return statement
@@ -224,15 +224,15 @@ Doc comments on exported identifiers default to one line. Multi-line only when t
 
 ```go
 // Bad — reads like a magazine article.
-// SMTPCodeMailboxUnavailable is the permanent "requested action not taken:
-// mailbox unavailable" reply. Returned when the recipient domain is not in
-// the configured allowlist. Defined as a named constant for visibility at
-// the call site.
-const SMTPCodeMailboxUnavailable = 550
+// HTTPStatusTooManyRequests is the reply sent when the client has issued more
+// requests than the configured window allows. Returned once the caller trips
+// the rate limiter. Defined as a named constant for visibility at the call
+// site.
+const HTTPStatusTooManyRequests = 429
 
 // Good — one line, references the spec.
-// SMTPCodeMailboxUnavailable: RFC 5321 §4.2.3 "mailbox unavailable".
-const SMTPCodeMailboxUnavailable = 550
+// HTTPStatusTooManyRequests: RFC 6585 §4 "Too Many Requests".
+const HTTPStatusTooManyRequests = 429
 ```
 
 ### GO15 — Handle Close errors in tests
@@ -261,53 +261,53 @@ Grep: `const [a-z]`
 
 ```go
 // Bad
-const smtpCodeMailboxUnavailable = 550
-var errRecipientDomainNotAccepted = &gosmtp.SMTPError{...}
+const httpStatusTooManyRequests = 429
+var errRequestQuotaExceeded = &apierr.APIError{...}
 
 // Good
-const SMTPCodeMailboxUnavailable = 550
-var ErrRecipientDomainNotAccepted = &gosmtp.SMTPError{...}
+const HTTPStatusTooManyRequests = 429
+var ErrRequestQuotaExceeded = &apierr.APIError{...}
 ```
 
 ### GO17 — Don't create variables with poor names
 
 A variable's name is its only documentation at the call site. A reader scanning the function should know what each name refers to without scrolling back. Three failure modes to avoid:
 
-1. **Truncated-word abbreviations** (`rl`, `st`, `cErr`, `sCancel`, `gen`, `rs`). Save no real space, lose all meaning. Use the word.
+1. **Truncated-word abbreviations** (`lim`, `st`, `cErr`, `sCancel`, `gen`, `mtx`). Save no real space, lose all meaning. Use the word.
 2. **Single-letter locals outside tight idioms.** `i` in a loop, `g`/`s` as a receiver, `w`/`r` in an `http.HandlerFunc` are fine because the idiom carries the meaning. `t` for a `time.Time` or `c` for a "client" is not.
-3. **Generic placeholders** (`data`, `result`, `value`, `item`). Pick a name that says *what* the thing is — `payload`, `allocated`, `traceID`, `candidate`.
+3. **Generic placeholders** (`data`, `result`, `value`, `item`). Pick a name that says *what* the thing is — `payload`, `normalized`, `traceID`, `candidate`.
 
 ```go
 // Bad
-rl := ratelimit.New(rdb, cfg.Limits)
-st := store.New(rdb, cfg)
-rs := redsync.New(goredislib.NewPool(rdb))
-gen := NewEmailGenerator(rdb, domains)
+lim := ratelimit.New(client, cfg.Limits)
+st := store.New(client, cfg)
+mtx := mutex.New(client)
+gen := NewIDGenerator(client, cfg.IDs)
 
 defer func() {
-    if cErr := rdb.Close(); cErr != nil {
-        ctx.L().Warn().Err(cErr).Msg("error while closing the redis client")
+    if cErr := client.Close(); cErr != nil {
+        ctx.L().Warn().Err(cErr).Msg("error while closing the cache client")
     }
 }()
 shutdownCtx, sCancel := context.WithTimeout(ctx, ShutdownTimeout)
 defer sCancel()
 
 // Good
-rateLimiter := ratelimit.New(rdb, cfg.Limits)
-store := store.New(rdb, cfg)
-locker := redsync.New(goredislib.NewPool(rdb))
-emailGen := NewEmailGenerator(rdb, domains)
+rateLimiter := ratelimit.New(client, cfg.Limits)
+store := store.New(client, cfg)
+locker := mutex.New(client)
+idGenerator := NewIDGenerator(client, cfg.IDs)
 
 defer func() {
-    if closeErr := rdb.Close(); closeErr != nil {
-        ctx.L().Warn().Err(closeErr).Msg("error while closing the redis client")
+    if closeErr := client.Close(); closeErr != nil {
+        ctx.L().Warn().Err(closeErr).Msg("error while closing the cache client")
     }
 }()
 shutdownCtx, shutdownCancel := context.WithTimeout(ctx, ShutdownTimeout)
 defer shutdownCancel()
 ```
 
-Exceptions stay narrow: `ctx`, `cfg`, `rdb`, `err`, `mu`, `wg`, `ch`, struct receivers — these are universal enough that readers parse them as the full word automatically. Everything else gets spelled out.
+Exceptions stay narrow: `ctx`, `cfg`, `db`, `err`, `mu`, `wg`, `ch`, struct receivers — these are universal enough that readers parse them as the full word automatically. Everything else gets spelled out.
 
 ### GO18 — Package names are the natural short word
 Don't suffix package names to avoid collisions with the standard library; alias at the import site instead.
@@ -325,11 +325,11 @@ When several domains share a result/status concept, give each its own prefixed c
 
 ```go
 // Bad
-const ResultPass = "pass" // shared by SPF, DKIM, DMARC
+const ResultPass = "pass" // shared by lint, build, test
 
 // Good
-const SPFResultPass = "pass"
-const DKIMResultPass = "pass"
+const LintResultPass = "pass"
+const BuildResultPass = "pass"
 ```
 
 ### GO20 — Functions receive the config object, not the config path

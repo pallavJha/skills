@@ -28,20 +28,20 @@ Grep: `@ts-ignore|as any|: any\b`
 ### JS3 — Abbreviations in names are fully uppercased
 Acronyms and abbreviations in class, interface, variable, and function names must be fully uppercased. Do not title-case them.
 
-Grep: `(Smtp|Spf|Dkim|Dmarc|Sse|Uuid|Json|Xml|Http|Url|Api)` — common abbreviations only; identifiers with other abbreviations are still judged by reading.
+Grep: `(Http|Url|Uri|Api|Json|Xml|Html|Uuid|Sql|Css)` — common abbreviations only; identifiers with other abbreviations are still judged by reading.
 
 ```ts
 // Bad
-export interface SmtpMeta {
-export interface SpfResult {
-export interface DkimSignature {
-export function startSse(): EventSource {
+export interface HttpHeaders {
+export interface ApiResponse {
+export interface JsonSchema {
+export function parseUuid(): string {
 
 // Good
-export interface SMTPMeta {
-export interface SPFResult {
-export interface DKIMSignature {
-export function startSSE(): EventSource {
+export interface HTTPHeaders {
+export interface APIResponse {
+export interface JSONSchema {
+export function parseUUID(): string {
 ```
 
 ### JS4 — Use path aliases instead of deep relative imports
@@ -51,16 +51,16 @@ Grep: `(from |require\()'(\.\./){2,}`
 
 ```js
 // Bad
-import { getEmailForSession } from '../../../lib/email/repository.js';
-import { listMessageIds, getMessage } from '../../../lib/email/messages.js';
+import { getOrderForSession } from '../../../lib/orders/repository.js';
+import { listOrderIds, getOrder } from '../../../lib/orders/queries.js';
 
-<script src="../../scripts/email/init.ts"></script>
+<script src="../../scripts/orders/init.ts"></script>
 
 // Good
-import { getEmailForSession } from '@lib/email/repository.js';
-import { listMessageIds, getMessage } from '@lib/email/messages.js';
+import { getOrderForSession } from '@lib/orders/repository.js';
+import { listOrderIds, getOrder } from '@lib/orders/queries.js';
 
-<script src="@scripts/email/init.ts"></script>
+<script src="@scripts/orders/init.ts"></script>
 ```
 
 ### JS5 — All custom errors must extend a BaseError class
@@ -100,10 +100,10 @@ The message should make sense to someone reading a log without the source code o
 
 ```ts
 // Bad
-throw new Error('allocate response missing email');
+throw new Error('create response missing id');
 
 // Good
-throw new Error('cannot find email in the email allocate API response');
+throw new Error('cannot find id in the create-order API response');
 ```
 
 ### JS8 — Log the error object, not just the message
@@ -116,7 +116,7 @@ Grep: `err(or)?\.message`
 c.on('error', (err) => console.error('[queue] client error:', err.message));
 
 // Good
-c.on('error', (err) => console.error('[queue] cleint client error:', err));
+c.on('error', (err) => console.error('[queue] client error:', err));
 ```
 
 ## Code Style
@@ -151,8 +151,8 @@ Grep: `(&&|\|\|)[^?:]*\?[^.]` , `\? [^:]*\? `
 
 ```js
 // Bad
-const utcOffset =
-  Number.isInteger(raw) && raw >= -MAX && raw <= MAX
+const pageSize =
+  Number.isInteger(raw) && raw >= MIN && raw <= MAX
     ? raw
     : undefined;
 
@@ -160,14 +160,14 @@ const utcOffset =
 const x = a ? b : c ? d : e;
 
 // Good
-let utcOffset;
-if (Number.isInteger(raw) && raw >= -MAX && raw <= MAX) {
-  utcOffset = raw;
+let pageSize;
+if (Number.isInteger(raw) && raw >= MIN && raw <= MAX) {
+  pageSize = raw;
 }
 
 // Also good — named predicate
-const inRange = Number.isInteger(raw) && raw >= -MAX && raw <= MAX;
-const utcOffset = inRange ? raw : undefined;
+const inRange = Number.isInteger(raw) && raw >= MIN && raw <= MAX;
+const pageSize = inRange ? raw : undefined;
 ```
 
 ### JS11 — Multi-line object literals in argument positions
@@ -185,20 +185,20 @@ JSON.stringify({
 ```
 
 ### JS12 — Sentinel filtering: assign first, then reset
-When external input may carry a sentinel meaning "missing" (`XX`/`T1`, `-1`, `"N/A"`), assign the raw value to the real variable, then reset it to `undefined` if it matches. Don't gate the assignment behind a predicate with a throwaway temp.
+When external input may carry a sentinel meaning "missing" (`"N/A"`, `-1`, `"unknown"`), assign the raw value to the real variable, then reset it to `undefined` if it matches. Don't gate the assignment behind a predicate with a throwaway temp.
 
 ```js
 // Bad
-const someHeader = req.get('x-some-header');
-let someHeaderValue;
-if (someHeader && someHeader !== 'XX' && someHeader !== 'T1') {
-  someHeaderValue = someHeader;
+const header = req.get('x-some-header');
+let headerValue;
+if (header && header !== 'N/A' && header !== 'unknown') {
+  headerValue = header;
 }
 
 // Good
-let someHeaderValue = req.get('x-some-header');
-if (someHeaderValue === 'XX' || someHeaderValue === 'T1') {
-  someHeaderValue = undefined;
+let headerValue = req.get('x-some-header');
+if (headerValue === 'N/A' || headerValue === 'unknown') {
+  headerValue = undefined;
 }
 ```
 
