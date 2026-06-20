@@ -1,0 +1,3 @@
+[submodule "humanizer"]
+	path = humanizer
+	url = git@github.com:blader/humanizer
