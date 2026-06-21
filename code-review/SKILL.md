@@ -94,6 +94,30 @@ Do NOT review by reading the diff once and writing down what stands out — that
 - **R3** Flag comments that restate what the code does (e.g., `// increment counter` above `counter++`). The code already says that.
 - **R4** Flag doc comments that are longer than necessary. One line is the default. Multi-line only when there's a genuine non-obvious constraint or gotcha.
 - **R5** Never suggest adding comments. If code is unclear, suggest making the code clearer.
+- **R6** When a doc comment is warranted, write it as a JSDoc block (`/** … */`): a one-line description, then behavior shown through JSDoc tags rather than prose — `@example` for `input → output`, `@link`/`@see` to relate symbols, `@param`/`@returns` where they add signal, `@note` for a genuine gotcha. Give `@example` its own lines (setup, call, result) instead of cramming it into a trailing `// → …` on one line. Flag multi-sentence prose ("novels / case studies") where an `@example` would convey it faster, and flag plain free-text where JSDoc tags would structure the same information.
+
+  ```ts
+  // Bad — a paragraph explaining behavior and rationale:
+  // Reconstruct the public URL the caller used. Behind nginx/Cloudflare the Node
+  // process only sees http://localhost:<port>/..., so take the Host header and
+  // append the path and query. Public traffic is always https; only local dev
+  // runs over plain http, so the scheme is https unless the host is loopback.
+  export function getPublicURL(request: Request): string { /* … */ }
+
+  // Good — one line, then tags carry the detail; the example breathes:
+  /**
+   * Builds the public request URL from the `Host` header. Scheme is `https`, or `http` for loopback hosts.
+   * @note The app runs behind nginx, so `request.url` only ever reports `localhost:<port>`; the real host is in the `Host` header.
+   *
+   * @example
+   * // req: Host '50x.tools', GET /hook/a/b?x=1
+   * getPublicURL(req);
+   * // → 'https://50x.tools/hook/a/b?x=1'
+   *
+   * @see {@link getClientIp}
+   */
+  export function getPublicURL(request: Request): string { /* … */ }
+  ```
 
 ### Design & maintainability
 - **M1** Flag functions longer than ~50 lines or with more than 3 levels of nesting. These are candidates for extraction — not as a style preference, but because deep nesting hides bugs.
@@ -128,7 +152,7 @@ For each finding, include the rule ID it violates (or `—` for issues outside t
 | JS9 braces | 17 findings (#4) |
 | JS10 no complex ternaries | 2 findings (#5) |
 
-Clean: JS1 JS2 JS8 JS13 C1–C8 S1–S7 B1 P1 P3 P4 R2 R4 M2–M5
+Clean: JS1 JS2 JS8 JS13 C1–C8 S1–S7 B1 P1 P3 P4 R2 R4 R6 M2–M5
 n/a: D (no DEVELOPMENT.md), JS4–JS7 JS17 JS19–JS21 C4 C5 B2–B7 P2 P5 P6
 
 A missing ID means the review is incomplete — go back to the verify pass.
