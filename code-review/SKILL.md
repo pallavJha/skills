@@ -9,7 +9,7 @@ Review the code specified by $ARGUMENTS. If no arguments are provided, review th
 
 ## Review process
 
-Do NOT review by reading the diff once and writing down what stands out — that misses rules. Follow the steps below in order.
+Don't review by reading the diff once and noting what stands out. That misses rules. Follow the steps below in order.
 
 1. **Gather context**: Read the changed files and understand what the code does. Look at surrounding code for context. If reviewing a git diff, use `git diff --staged` as you're only supposed to review the staged changes. Mention that you'll only review the staged changes on start so that dev can stage the changes.
 
@@ -21,7 +21,7 @@ Do NOT review by reading the diff once and writing down what stands out — that
      - HTML / Svelte / JSX markup: `${CLAUDE_SKILL_DIR}/html-rules.md`
    - `C#`/`S#`/`B#`/`P#`/`R#`/`M#`: the dimension checks below; each bullet carries its ID.
 
-   The inventory is the contract for the review — every ID must receive a verdict before the review can end.
+   Every ID in the inventory needs a verdict before the review can end.
 
 3. **Grep pre-pass**: Mechanically detectable rules carry a `Grep:` line in the rules files, listing one or more regex patterns in backticks. Run every pattern against the changed files only (Grep tool or `grep -nE`). Each hit is a candidate violation: during the sweep it must be either confirmed as a finding or dismissed with a one-line reason (e.g. "JS10 hit at api.ts:42 — `?.` optional chaining, not a ternary"). Never silently drop a hit.
 
@@ -29,7 +29,7 @@ Do NOT review by reading the diff once and writing down what stands out — that
 
 4. **Parallel sweep**: Split the inventory into four slices and review them concurrently — spawn all four agents in a single message so they actually run in parallel:
    - Agent 1: `D#` + the language rules (`JS#` / `GO#` / `HTML#`)
-   - Agent 2: `C#` + `B#` (correctness and reliability — the deepest read)
+   - Agent 2: `C#` + `B#` (correctness and reliability, the deepest read)
    - Agent 3: `S#` + `P#` (security and performance)
    - Agent 4: `R#` + `M#` (readability and maintainability)
 
@@ -89,7 +89,7 @@ Do NOT review by reading the diff once and writing down what stands out — that
 - **P6** Flag missing indexes on columns used in `WHERE`, `JOIN`, or `ORDER BY` clauses in new or modified queries.
 
 ### Comments & readability
-- **R1** Flag verbose, redundant, or boilerplate comments. Comments are a maintenance burden — every comment is a liability that can drift from the code it describes.
+- **R1** Flag verbose, redundant, or boilerplate comments. Every comment is a maintenance burden that can drift from the code it describes.
 - **R2** A comment is only justified when the code *cannot* be made self-explanatory through better naming, simpler structure, or smaller functions. If the fix is to rewrite the code, suggest that instead of keeping the comment.
 - **R3** Flag comments that restate what the code does (e.g., `// increment counter` above `counter++`). The code already says that.
 - **R4** Flag doc comments that are longer than necessary. One line is the default. Multi-line only when there's a genuine non-obvious constraint or gotcha.
@@ -110,9 +110,9 @@ Do NOT review by reading the diff once and writing down what stands out — that
    * @note The app runs behind nginx, so `request.url` only ever reports `localhost:<port>`; the real host is in the `Host` header.
    *
    * @example
-   * // req: Host '50x.tools', GET /hook/a/b?x=1
+   * // req: Host 'example.com', GET /hook/a/b?x=1
    * getPublicURL(req);
-   * // → 'https://50x.tools/hook/a/b?x=1'
+   * // → 'https://example.com/hook/a/b?x=1'
    *
    * @see {@link getClientIp}
    */

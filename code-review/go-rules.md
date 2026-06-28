@@ -111,7 +111,7 @@ func (s *Server) Fetch(ctx context.Context, id string) (*User, error)
 
 ### GO7 — Every goroutine needs a known exit
 
-Don't `go f()` without knowing how it stops. A goroutine that blocks forever on a channel or a network call is a silent leak — no panic, no log. Tie its lifetime to a `context.Context`, a `done` channel, or a `sync.WaitGroup` the caller controls.
+Don't `go f()` without knowing how it stops. A goroutine that blocks forever on a channel or a network call leaks silently, with no panic and no log to point at it. Tie its lifetime to a `context.Context`, a `done` channel, or a `sync.WaitGroup` the caller controls.
 
 ```go
 // Bad — leaks if the receiver never reads

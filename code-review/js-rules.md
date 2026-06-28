@@ -251,10 +251,20 @@ for (const match of concat.matchAll(/\S+/g)) {
 
 Grep: `\{[^{}]*;[^{}]*;` , `while ?\(.*=[^=]` — `for(;;)` headers are dismissals.
 
+### JS24 — Keep shared domain types in `types.ts`
+Each package should keep its shared domain types in a dedicated `types.ts` file at the package root. For example, `lib/internal/mail` should define `lib/internal/mail/types.ts` for mail-specific error classes that extend `BaseError`, error codes, `AuthenticationResult`, and other types imported by multiple modules. Keep implementation details and types used by only one module in that module instead of turning `types.ts` into a catch-all.
+
+```text
+lib/internal/mail/
+├── types.ts       # shared errors, codes, and result types
+├── authenticate.ts
+└── send.ts
+```
+
 ## JSDoc
 
 ### JS15 — Every function gets a JSDoc; trivial locals don't
-Function signatures are contracts — document every `@param` and `@return`, even on a two-liner. Skip JSDoc on trivial local variables whose type and purpose are obvious from the assigning expression.
+A function signature is a contract, so document every `@param` and `@return`, even on a two-liner. Skip JSDoc on trivial local variables whose type and purpose are obvious from the assigning expression.
 
 ### JS16 — JSDoc must be crisp, never loquacious
 One short sentence for the contract, one line per `@param`/`@return`. No "this function does X" preambles, no prose walls. Add `@example` only when it surfaces an edge case the types don't convey.
